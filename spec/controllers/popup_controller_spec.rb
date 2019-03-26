@@ -20,7 +20,7 @@ describe PopupController do
   let(:final_versions) {{
       review_round_one: {questionnaire_id: 1, response_ids: [1]},
       review_round_two: {questionnaire_id: 2, response_ids: [2]},
-      review_round_three: {questionnaire_id: 3, response_ids: [3], }
+      review_round_three: {questionnaire_id: 3, response_ids: [3]},
   }}
   test_url = "http://peerlogic.csc.ncsu.edu/reviewsentiment/viz/478-5hf542"
   mocked_comments_one = OpenStruct.new(comments: "test comment")
@@ -218,7 +218,7 @@ describe PopupController do
   end
 
   ######### Tone Analysis Tests ##########
-  describe "tone analysis tests" do
+  describe "tone analysis popup tests" do
     before(:each) do
       allow(ReviewResponseMap).to receive(:where).with('reviewee_id = ?', assignment_team.id).and_return([response_map])
       allow(Assignment).to receive(:find).with('reviewee_id = ?', assignment_team.id).and_return(assignment)
@@ -228,8 +228,6 @@ describe PopupController do
 
       allow(Questionnaire).to receive(:find).with(any_args).and_return(questionnaire)
       allow(Question).to receive(:where).with(:questionnaire_id => questionnaire.id).and_return([question])
-
-
     end
 
     describe '#tone_analysis_chart_popup' do
@@ -257,72 +255,71 @@ describe PopupController do
           expect(controller.instance_variable_get(:@reviews)).to eq []
         end
     end
+  end
 
+  describe 'tone analysis calculation tests' do
     describe '#build_tone_analysis_report' do
 
       describe 'review is not empty' do
         context 'answer to a question is not provided' do
           it 'build tone analysis report' do
-          # allow(Answer).to receive(:where).with(any_args).and_return([answer])
             controller.instance_variable_set(:@review_final_versions, final_versions)
 
-
-            # session = {user: instructor}
-            # get :build_tone_analysis_report, session
+            # This return value does not matter, you can just set the Question call as needed
+            allow(Questionnaire).to receive(:find).with(any_args).and_return(questionnaire)
+            allow(Question).to receive(:where).with(any_args).and_return([question])
             allow(Answer).to receive(:where).with(any_args).and_return([])
+
             controller.send(:build_tone_analysis_report)
+
+            # Three review rounds, so 3 JSON dicts in the output
+            sent_summary = controller.instance_variable_get(:@sentiment_summary)
+
+            # Check the text JSON value of the sentiment analysis for "N/A", set in the if branch
+            expect(sent_summary[0]["sentiments"][0]["text"]).to eq "N/A"
 
           end
         end
 
         context 'answer to a question is provided' do
           it 'build tone analysis report' do
-            # expect(allow(Answer).to receive(:where).with(:question_id => 1).and_return([answer])).to be [answer]
-            allow(Answer).to receive(:where).with(any_args).and_return([answer])
-            controller.send(:build_tone_analysis_report)
-            # puts [answer]
-            # controller.send(:build_tone_analysis_report)
-            # expect(controller.instance_variable_get(:@sentiment_summary)).to eq nil
+
+            # TODO: Repeat above but expect sentiment summary text to get local variable review.comments value
+            # (Note review.comments will come from the call to Answer)
 
           end
         end
       end
 
-      describe 'review is empty' do
-        it 'does not build tone analysis report' do
-          expect(controller.instance_variable_get(:@sentiment_summary)).to eq nil
-
-        end
-      end
-
-
+      # describe 'review is empty' do
+      #   it 'does not build tone analysis report' do
+      #     expect(controller.instance_variable_get(:@sentiment_summary)).to eq nil
+      #
+      #   end
+      # end
 
     end
 
-    describe '#build_tone_analysis_heatmap' do
-      ## INSERT CONTEXT/DESCRIPTION/CODE HERE
-
-      context 'sentiment summary is empty' do
-        it 'set a sentiment value' do
-          # session = {user: instructor}
-          # get :build_tone_analysis_heatmap, session
-          # expect(controller.instance_variable_get(:@sentiment_summary)).to eq nil
-          # controller.send(:build_tone_analysis_heatmap)
-          controller.instance_variable_set(:@sentiment_summary, sentiment_summary)
-          expect(controller.instance_variable_get(:@sentiment_summary)).to eq sentiment_summary
-
-        end
-      end
-
-      context 'sentiment summary is not empty' do
-        it 'set a sentiment value' do
-
-
-        end
-      end
-
-
-    end
+    # describe '#build_tone_analysis_heatmap' do
+    #   ## INSERT CONTEXT/DESCRIPTION/CODE HERE
+    #
+    #   context 'sentiment summary is empty' do
+    #     it 'set a sentiment value' do
+    #       # session = {user: instructor}
+    #       # get :build_tone_analysis_heatmap, session
+    #       # expect(controller.instance_variable_get(:@sentiment_summary)).to eq nil
+    #       # controller.send(:build_tone_analysis_heatmap)
+    #       controller.instance_variable_set(:@sentiment_summary, sentiment_summary)
+    #       expect(controller.instance_variable_get(:@sentiment_summary)).to eq sentiment_summary
+    #     end
+    #   end
+    #
+    #   context 'sentiment summary is not empty' do
+    #     it 'set a sentiment value' do
+    #
+    #     end
+    #   end
+    # end
   end
   ##########################################
 
